@@ -1,61 +1,60 @@
 """콘텐츠 기반 필터링 알고리즘"""
-import numpy as np
-import pandas as pd
+
 import json
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy.orm import Session
-from app.models import Content, Interaction, Rating
+from app.models import Content, Interaction
 from typing import List, Tuple
-import warnings
-warnings.filterwarnings('ignore')
 
 
 class ContentBasedFiltering:
-    """콘텐츠 기반 필터링"""
+    """TF-IDF 기반 콘텐츠 추천"""
 
     def __init__(self):
         self.tfidf_vectorizer = None
         self.content_vectors = None
-        self.content_ids = None
-        self.content_map = {}
+        self.content_ids = []
 
-    def build_content_vectors(self, session: Session) -> np.ndarray:
-        """
-        콘텐츠 벡터 생성 (TF-IDF 기반)
-        
-        Returns:
-            sparse matrix: 콘텐츠 벡터
-        """
+    def _tags_to_text(self, tags: str) -> str:
+        try:
+            parsed = json.loads(tags) if tags else []
+            if isinstance(parsed, list):
+                return " ".join(map(str, parsed))
+            return str(parsed)
+        except Exception:
+            return tags or ""
+
+    def build_content_vectors(self, session: Session):
         contents = session.query(Content).filter(Content.is_active == True).all()
 
         if not contents:
+            self.content_vectors = None
+            self.content_ids = []
             return None
 
-        # 콘텐츠 텍스트 (제목 + 설명 + 태그)
         texts = []
-        for c in contents:
-            tags = ""
-            try:
-                tags_list = json.loads(c.tags) if c.tags else []
-                tags = " ".join(tags_list)
-            except:
-                pass
+        self.content_ids = []
 
-            text = f"{c.title} {c.description or ''} {tags} {c.category}"
+        for content in contents:
+            tag_text = self._tags_to_text(content.tags)
+            text = f"""
+            {content.title}
+            {content.description or ""}
+            {content.category}
+            {tag_text}
+            """
             texts.append(text)
+            self.content_ids.append(content.id)
 
-        self.content_ids = [c.id for c in contents]
-        self.content_map = {c.id: c for c in contents}
-
-        # TF-IDF 벡터화
         self.tfidf_vectorizer = TfidfVectorizer(
-            max_features=100,
-            stop_words='english',
+            max_features=1000,
+            ngram_range=(1, 2),
             min_df=1
         )
-        self.content_vectors = self.tfidf_vectorizer.fit_transform(texts)
 
+        self.content_vectors = self.tfidf_vectorizer.fit_transform(texts)
         return self.content_vectors
 
     def get_similar_contents(
@@ -63,36 +62,26 @@ class ContentBasedFiltering:
         content_id: int,
         n_similar: int = 5
     ) -> List[Tuple[int, float]]:
-        """
-        유사한 콘텐츠 찾기
-        
-        Args:
-            content_id: 기준 콘텐츠 ID
-            n_similar: 유사 콘텐츠 개수
-            
-        Returns:
-            List: [(content_id, similarity_score), ...]
-        """
+
         if self.content_vectors is None or content_id not in self.content_ids:
             return []
 
-        try:
-            content_idx = self.content_ids.index(content_id)
+        content_idx = self.content_ids.index(content_id)
 
-            # 유사도 계산
-            similarities = cosine_similarity(
-                self.content_vectors[content_idx],
-                self.content_vectors
-            ).flatten()
+        similarities = cosine_similarity(
+            self.content_vectors[content_idx],
+            self.content_vectors
+        ).flatten()
 
-            # 상위 N개 (자신 제외)
-            top_indices = np.argsort(similarities)[::-1][1:n_similar+1]
+        similarities[content_idx] = -1
 
-            return [(self.content_ids[idx], similarities[idx]) for idx in top_indices]
+        top_indices = np.argsort(similarities)[::-1][:n_similar]
 
-        except Exception as e:
-            print(f"Error in CB get_similar_contents: {e}")
-            return []
+        return [
+            (self.content_ids[idx], float(similarities[idx]))
+            for idx in top_indices
+            if similarities[idx] >= 0
+        ]
 
     def get_recommendations_for_user(
         self,
@@ -100,58 +89,42 @@ class ContentBasedFiltering:
         session: Session,
         n_recommendations: int = 10
     ) -> List[Tuple[int, float]]:
-        """
-        사용자가 상호작용한 콘텐츠를 기반으로 추천
-        
-        Args:
-            user_id: 사용자 ID
-            session: DB 세션
-            n_recommendations: 추천 개수
-            
-        Returns:
-            List: [(content_id, score), ...]
-        """
+
         if self.content_vectors is None:
             return []
 
-        try:
-            # 사용자가 본 콘텐츠
-            user_interactions = session.query(Interaction)\
-                .filter(Interaction.user_id == user_id)\
-                .all()
+        interactions = session.query(Interaction).filter(
+            Interaction.user_id == user_id
+        ).all()
 
-            seen_content_ids = [i.content_id for i in user_interactions]
+        seen_content_ids = list({i.content_id for i in interactions})
 
-            if not seen_content_ids:
-                return []
-
-            # 본 콘텐츠의 유효한 인덱스 찾기
-            seen_indices = []
-            for cid in seen_content_ids:
-                if cid in self.content_ids:
-                    seen_indices.append(self.content_ids.index(cid))
-
-            if not seen_indices:
-                return []
-
-            # 본 콘텐츠의 벡터 평균
-            user_profile = self.content_vectors[seen_indices].mean(axis=0)
-
-            # 유사도 계산
-            similarities = cosine_similarity(
-                user_profile,
-                self.content_vectors
-            ).flatten()
-
-            # 본 콘텐츠 제외
-            for idx in seen_indices:
-                similarities[idx] = -1
-
-            # 상위 N개
-            top_indices = np.argsort(similarities)[::-1][:n_recommendations]
-
-            return [(self.content_ids[idx], similarities[idx]) for idx in top_indices if similarities[idx] >= 0]
-
-        except Exception as e:
-            print(f"Error in CB get_recommendations_for_user: {e}")
+        if not seen_content_ids:
             return []
+
+        seen_indices = [
+            self.content_ids.index(content_id)
+            for content_id in seen_content_ids
+            if content_id in self.content_ids
+        ]
+
+        if not seen_indices:
+            return []
+
+        user_profile = self.content_vectors[seen_indices].mean(axis=0)
+
+        similarities = cosine_similarity(
+            user_profile,
+            self.content_vectors
+        ).flatten()
+
+        for idx in seen_indices:
+            similarities[idx] = -1
+
+        top_indices = np.argsort(similarities)[::-1][:n_recommendations]
+
+        return [
+            (self.content_ids[idx], float(similarities[idx]))
+            for idx in top_indices
+            if similarities[idx] >= 0
+        ]
