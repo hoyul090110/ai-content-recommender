@@ -1,0 +1,14 @@
+{
+  "name": "ai-content-recommender-netlify-ai-live",
+  "version": "2.0.0",
+  "description": "Netlify AI keyword-based content recommender",
+  "type": "module",
+  "scripts": {
+    "start": "netlify dev",
+    "test": "echo \"Static Netlify app\""
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "netlify-cli": "latest"
+  }
+}
