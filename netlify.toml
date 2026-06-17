@@ -1,8 +1,0 @@
-[build]
-  publish = "."
-  functions = "netlify/functions"
-
-[[redirects]]
-  from = "/api/recommend"
-  to = "/.netlify/functions/recommend"
-  status = 200
