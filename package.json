@@ -1,0 +1,11 @@
+{
+  "name": "ai-content-recommender-vercel-search-personalized",
+  "version": "3.0.0",
+  "description": "Keyword search and activity-based AI content recommender for Vercel",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Static Vercel app\""
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
