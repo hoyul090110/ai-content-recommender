@@ -1,0 +1,13 @@
+{
+  "name": "ai-content-recommender-netlify",
+  "version": "1.0.0",
+  "description": "Netlify 과제용 정적 AI 콘텐츠 추천 웹사이트",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "node -e \"console.log('Static project: no build required')\""
+  },
+  "keywords": ["netlify", "recommendation", "javascript", "static-site"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {}
+}
