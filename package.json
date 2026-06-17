@@ -1,0 +1,11 @@
+{
+  "name": "ai-content-recommender-vercel-ai-live",
+  "version": "2.1.0",
+  "description": "Vercel AI keyword-based content recommender",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Static Vercel app\""
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
