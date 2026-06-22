@@ -1,8 +1,0 @@
-{
-  "name": "ai-content-recommender-demo-basic",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "start": "npx serve ."
-  }
-}
