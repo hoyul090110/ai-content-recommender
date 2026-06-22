@@ -429,4 +429,3 @@ function setStatus(message, mode = "ok") {
   if (mode === "loading") panel.classList.add("loading");
   if (mode === "error") panel.classList.add("error");
   $("statusText").textContent = message;
-}
