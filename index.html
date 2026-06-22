@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Content Recommender</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <nav class="topbar">
+        <div class="brand">
+          <span class="brand-mark">AI</span>
+          <span>Content Recommender</span>
+        </div>
+        <button id="resetBtn" class="ghost-btn" type="button">활동 초기화</button>
+      </nav>
+
+      <section class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">AI 기반 콘텐츠 추천 웹사이트</p>
+          <h1>키워드를 입력하면 AI가 관련 콘텐츠를 찾아 추천합니다.</h1>
+          <p class="hero-desc">
+            기사, 영상, 이미지 자료를 키워드 중심으로 탐색하고, 좋아요·북마크·공유·관심없음 활동을 반영해
+            개인화 추천을 제공합니다.
+          </p>
+          <div class="hero-tags">
+            <button class="quick-chip" data-keyword="AI 진로">AI 진로</button>
+            <button class="quick-chip" data-keyword="시험기간 집중법">시험기간 집중법</button>
+            <button class="quick-chip" data-keyword="축구 전술 분석">축구 전술 분석</button>
+            <button class="quick-chip" data-keyword="고등학생 데이터 분석 프로젝트">데이터 분석 프로젝트</button>
+          </div>
+        </div>
+
+        <div class="search-panel">
+          <label for="keywordInput">추천받고 싶은 키워드</label>
+          <div class="search-box">
+            <textarea id="keywordInput" rows="4" placeholder="예: 인공지능 진로, 고등학생 포트폴리오, 축구 전술 분석"></textarea>
+            <button id="searchBtn" type="button">AI 추천 받기</button>
+          </div>
+          <p class="hint">
+            OpenAI API 연결 실패 시에도 과제 시연이 가능하도록 기본 추천 모드가 자동으로 실행됩니다.
+          </p>
+        </div>
+      </section>
+    </header>
+
+    <main>
+      <section class="status-panel" id="statusPanel" aria-live="polite">
+        <div class="status-dot"></div>
+        <span id="statusText">키워드를 입력하면 추천 결과가 표시됩니다.</span>
+      </section>
+
+      <section class="dashboard">
+        <article class="metric-card">
+          <span class="metric-label">긍정 활동</span>
+          <strong id="positiveCount">0</strong>
+          <small>좋아요 · 북마크 · 공유</small>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">관심없음</span>
+          <strong id="negativeCount">0</strong>
+          <small>추천 감소 주제</small>
+        </article>
+        <article class="metric-card wide">
+          <span class="metric-label">분석된 관심 키워드</span>
+          <div id="interestKeywords" class="keyword-cloud empty">아직 활동 기록이 없습니다.</div>
+        </article>
+      </section>
+
+      <section class="content-section">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Keyword Results</p>
+            <h2>키워드 관련 콘텐츠</h2>
+          </div>
+          <button id="moreBtn" class="secondary-btn" type="button" disabled>더 추천받기</button>
+        </div>
+        <div id="resultsGrid" class="grid empty-state">
+          <div class="empty-card">
+            <strong>아직 추천 결과가 없습니다.</strong>
+            <p>위 검색창에 관심 키워드를 입력해보세요.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-section personal-section" id="personalSection">
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Personalized</p>
+            <h2>나의 활동 바탕 콘텐츠 추천</h2>
+          </div>
+          <button id="personalBtn" class="secondary-btn" type="button" disabled>개인화 추천 새로고침</button>
+        </div>
+        <div id="personalGrid" class="grid empty-state">
+          <div class="empty-card">
+            <strong>활동이 쌓이면 개인화 추천이 표시됩니다.</strong>
+            <p>좋아요, 북마크, 공유를 눌러 관심사를 알려주세요.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="cardTemplate">
+    <article class="content-card">
+      <div class="thumb-wrap">
+        <img class="thumb" alt="" loading="lazy" />
+        <span class="type-badge"></span>
+      </div>
+      <div class="card-body">
+        <div class="card-meta">
+          <span class="source"></span>
+          <span class="score"></span>
+        </div>
+        <h3></h3>
+        <p class="summary"></p>
+        <p class="reason"></p>
+        <div class="tags"></div>
+      </div>
+      <div class="card-actions">
+        <button class="like-btn" type="button">좋아요</button>
+        <button class="bookmark-btn" type="button">북마크</button>
+        <button class="share-btn" type="button">공유</button>
+        <button class="hide-btn" type="button">관심없음</button>
+      </div>
+      <a class="open-link" target="_blank" rel="noopener noreferrer">자료 열기</a>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>
